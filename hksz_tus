@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>HKSZ 时间利用日记</title>
+<style>
+:root {
+  --bg: #f4f1eb;
+  --surface: #fffdf9;
+  --surface2: #ece6dd;
+  --border: #d6cec2;
+  --text: #1f2933;
+  --text2: #55606c;
+  --text3: #7b8794;
+  --accent: #2f5d62;
+  --accent-light: #dfeceb;
+  --accent-bg: #eef5f4;
+  --radius: 14px;
+  --shadow: 0 8px 24px rgba(31, 41, 51, 0.06);
+  --shadow-lg: 0 18px 42px rgba(31, 41, 51, 0.12);
+  --font: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
+  --font-display: 'Songti SC', 'STSong', 'Noto Serif SC', serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); font-family: var(--font); color: var(--text); font-size: 16px; line-height: 1.5; }
+.td-app { max-width: 520px; margin: 0 auto; min-height: 100vh; background: linear-gradient(180deg, rgba(255,253,249,0.82) 0%, rgba(244,241,235,0.96) 100%); position: relative; padding-bottom: 96px; }
+.td-header { position: sticky; top: 0; z-index: 50; background: rgba(244,241,235,0.94); backdrop-filter: blur(14px); padding: 20px 22px 14px; border-bottom: 1px solid rgba(214,206,194,0.9); }
+.td-header h1 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
+.td-header .subtitle { font-size: 0.95rem; color: var(--text2); margin-top: 4px; }
+.progress-wrap { margin-top: 12px; }
+.progress-bar { height: 6px; background: var(--surface2); border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+.progress-text { font-size: 0.85rem; color: var(--text3); margin-top: 6px; display: flex; justify-content: space-between; }
+.tab-bar { display: flex; background: rgba(255,253,249,0.86); border-bottom: 1px solid var(--border); padding: 0 18px; }
+.tab-btn { flex: 1; padding: 13px 0 12px; text-align: center; font-size: 0.96rem; font-weight: 600; color: var(--text3); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; font-family: var(--font); transition: color 0.2s ease, border-color 0.2s ease; }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+.timeline { padding: 14px 18px; }
+.slot-row { display: flex; align-items: stretch; min-height: 58px; border-bottom: 1px solid rgba(214,206,194,0.75); cursor: pointer; transition: background 0.15s ease; }
+.slot-row:hover { background: var(--accent-bg); }
+.slot-row.selected { background: var(--accent-light); }
+.slot-time { width: 108px; flex-shrink: 0; font-family: var(--font); font-size: 0.8rem; font-weight: 600; color: var(--text2); padding: 16px 8px 16px 2px; display: flex; align-items: center; line-height: 1.35; }
+.slot-content { flex: 1; display: flex; align-items: center; padding: 10px 10px; gap: 10px; min-width: 0; }
+.slot-empty { font-size: 0.95rem; color: var(--text3); }
+.slot-filled { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.slot-color { width: 5px; height: 34px; border-radius: 999px; flex-shrink: 0; }
+.slot-info { flex: 1; min-width: 0; }
+.slot-activity { font-size: 0.98rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot-venue { font-size: 0.85rem; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.slot-mood { font-size: 1.2rem; flex-shrink: 0; }
+.time-divider { padding: 12px 18px 8px; font-size: 0.76rem; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; background: transparent; border-bottom: 1px solid rgba(214,206,194,0.55); }
+.batch-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); max-width: 520px; width: 100%; background: rgba(31,41,51,0.96); color: white; padding: 16px 20px 18px; display: flex; align-items: center; justify-content: space-between; z-index: 60; animation: slideUp 0.25s ease; box-shadow: 0 -10px 30px rgba(31,41,51,0.18); }
+@keyframes slideUp { from { transform: translateX(-50%) translateY(100%); } to { transform: translateX(-50%) translateY(0); } }
+.batch-bar .info { font-size: 0.96rem; font-weight: 600; }
+.batch-bar .info small { font-weight: 400; opacity: 0.72; font-size: 0.84rem; display: block; margin-top: 3px; }
+.batch-bar button { padding: 10px 18px; border-radius: 10px; border: none; font-size: 0.92rem; font-weight: 600; cursor: pointer; font-family: var(--font); }
+.batch-bar .btn-fill { background: var(--accent); color: white; }
+.batch-bar .btn-cancel { background: rgba(255,255,255,0.15); color: white; margin-right: 8px; }
+.modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; justify-content: center; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal-sheet { background: var(--surface); width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; border-radius: 26px 26px 0 0; padding: 24px 22px 34px; animation: sheetUp 0.3s ease; box-shadow: 0 -18px 44px rgba(31,41,51,0.18); }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-sheet .handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 16px; }
+.modal-sheet h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+.modal-sheet .time-range { font-size: 0.94rem; color: var(--text2); margin-bottom: 18px; }
+.field-label { display: block; font-size: 0.84rem; font-weight: 700; color: var(--text2); margin-bottom: 8px; margin-top: 18px; letter-spacing: 0.04em; }
+.act-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.act-chip { display: flex; align-items: center; gap: 8px; padding: 12px 12px; border-radius: 12px; border: 1.5px solid var(--border); background: rgba(255,253,249,0.88); cursor: pointer; font-size: 0.92rem; font-weight: 500; transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease; }
+.act-chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+.act-chip.active { border-color: var(--accent); background: var(--accent-light); }
+.act-chip .emoji { font-size: 1.2rem; }
+.act-chip .label { flex: 1; min-width: 0; line-height: 1.4; }
+.help-btn { width: 22px; height: 22px; flex-shrink: 0; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,253,249,0.96); color: var(--text3); font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.help-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.help-overlay { position: fixed; inset: 0; z-index: 140; background: rgba(0,0,0,0.32); display: flex; align-items: center; justify-content: center; padding: 18px; }
+.help-card { width: 100%; max-width: 420px; background: var(--surface); border-radius: 18px; box-shadow: var(--shadow-lg); padding: 22px 20px; }
+.help-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.help-card h3 { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+.help-card p { font-size: 0.93rem; color: var(--text2); line-height: 1.7; }
+.help-close { border: none; background: transparent; color: var(--text3); font-size: 1.2rem; line-height: 1; cursor: pointer; padding: 2px; }
+.help-section { margin-top: 14px; }
+.help-section strong { display: block; font-size: 0.84rem; color: var(--text); margin-bottom: 6px; }
+.help-list { font-size: 0.92rem; color: var(--text2); line-height: 1.7; padding-left: 18px; }
+.venue-group { margin-top: 12px; }
+.venue-group:first-of-type { margin-top: 0; }
+.venue-group-title { font-size: 0.82rem; font-weight: 700; color: var(--text3); margin-bottom: 8px; letter-spacing: 0.03em; }
+.venue-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.venue-chip { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border); font-size: 0.88rem; cursor: pointer; transition: all 0.15s ease; background: rgba(255,253,249,0.88); }
+.venue-chip:hover { border-color: var(--text3); }
+.venue-chip.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+.mood-row { display: flex; gap: 10px; justify-content: center; }
+.mood-btn { width: 58px; height: 58px; border-radius: 16px; border: 1.5px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; background: rgba(255,253,249,0.88); font-size: 1.5rem; }
+.mood-btn small { font-size: 0.7rem; color: var(--text3); margin-top: 1px; }
+.mood-btn:hover { border-color: var(--text3); }
+.mood-btn.active { border-color: var(--accent); background: var(--accent-light); transform: translateY(-1px); }
+.field-hint { font-size: 0.86rem; color: var(--text2); line-height: 1.6; margin-top: 8px; }
+.loc-toggle { display: flex; gap: 8px; margin-top: 8px; }
+.loc-toggle button { padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border); background: rgba(255,253,249,0.88); font-size: 0.88rem; cursor: pointer; font-family: var(--font); }
+.loc-toggle button.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); font-weight: 600; }
+.city-row { display: flex; gap: 8px; margin-top: 12px; }
+.city-chip { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 14px; border-radius: 12px; border: 1.5px solid var(--border); background: rgba(255,253,249,0.92); font-size: 0.92rem; font-weight: 600; color: var(--text2); cursor: pointer; transition: all 0.15s ease; }
+.city-chip.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.select-panel { margin-top: 12px; }
+.select-label { display: block; font-size: 0.84rem; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
+.select-input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 0.96rem; font-family: var(--font); color: var(--text); background: rgba(255,253,249,0.96); transition: border 0.2s ease, box-shadow 0.2s ease; }
+.select-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,93,98,0.08); }
+.select-input:disabled { color: var(--text3); background: rgba(236,230,221,0.6); cursor: not-allowed; }
+.modal-actions { display: flex; gap: 10px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
+.modal-actions button { flex: 1; padding: 14px; border-radius: 12px; font-size: 0.96rem; font-weight: 600; cursor: pointer; border: none; font-family: var(--font); }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #264e52; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary { background: var(--surface2); color: var(--text); }
+.btn-danger { background: #fee2e2; color: #dc2626; }
+.review { padding: 18px; }
+.review-block { background: rgba(255,253,249,0.92); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); display: flex; gap: 14px; align-items: flex-start; border: 1px solid rgba(214,206,194,0.72); }
+.review-time { font-family: var(--font); font-size: 0.85rem; font-weight: 600; color: var(--text2); min-width: 96px; padding-top: 2px; }
+.review-detail { flex: 1; }
+.review-detail .act-name { font-weight: 700; font-size: 1rem; }
+.review-detail .meta { font-size: 0.88rem; color: var(--text2); margin-top: 4px; line-height: 1.45; }
+.submit-section { padding: 22px 16px; }
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1f6b55; color: white; padding: 14px 24px; border-radius: 14px; font-size: 0.95rem; font-weight: 500; z-index: 200; box-shadow: var(--shadow-lg); animation: toastIn 0.3s ease; }
+.toast.error { background: #991b1b; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+.intro-page { padding: 42px 24px 36px; text-align: center; }
+.intro-page .logo { width: fit-content; margin: 0 auto 18px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; background: rgba(255,253,249,0.88); font-size: 0.84rem; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); }
+.intro-page h2 { font-family: var(--font-display); font-size: 2rem; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.02em; }
+.intro-page p { font-size: 1rem; color: var(--text2); line-height: 1.7; margin-bottom: 28px; }
+.intro-page .features { text-align: left; margin-bottom: 30px; padding: 18px; border-radius: 18px; background: rgba(255,253,249,0.78); border: 1px solid rgba(214,206,194,0.72); box-shadow: var(--shadow); }
+.intro-page .feat { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; }
+.intro-page .feat .num { width: 30px; height: 30px; border-radius: 999px; background: var(--accent-light); color: var(--accent); font-size: 0.84rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.intro-page .feat .desc { font-size: 0.94rem; line-height: 1.65; }
+.intro-page .feat .desc strong { color: var(--text); }
+.start-btn { width: 100%; padding: 16px; border-radius: 14px; background: var(--accent); color: white; font-size: 1rem; font-weight: 700; border: none; cursor: pointer; font-family: var(--font); box-shadow: 0 10px 24px rgba(47,93,98,0.22); transition: background 0.2s ease, transform 0.2s ease; }
+.start-btn:hover { background: #264e52; transform: translateY(-1px); }
+.start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.empty-review { text-align: center; padding: 72px 22px; color: var(--text3); }
+.empty-review .icon { width: fit-content; margin: 0 auto 14px; padding: 8px 14px; border-radius: 999px; background: rgba(255,253,249,0.82); border: 1px solid var(--border); font-size: 0.84rem; font-weight: 700; color: var(--accent); }
+.success-page { text-align: center; padding: 72px 24px; }
+.success-page .icon { width: fit-content; margin: 0 auto 18px; padding: 9px 15px; border-radius: 999px; background: var(--accent-light); border: 1px solid rgba(47,93,98,0.16); font-size: 0.84rem; font-weight: 700; color: var(--accent); }
+.success-page h2 { font-family: var(--font-display); font-size: 2rem; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+.success-page p { font-size: 1rem; color: var(--text2); line-height: 1.75; }
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.warning-box { background: #f9f4e8; border: 1px solid #d6c18b; border-radius: 12px; padding: 14px 16px; margin: 14px 0; font-size: 0.92rem; color: #7d5f17; line-height: 1.6; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+/* ============================================================
+   ★★★ 请将下面的 URL 替换为你的 Google Apps Script 网址 ★★★
+   部署教程见 部署教程.md
+   ============================================================ */
+const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+
+const TOTAL_SLOTS = 48;
+const slotLabel = (i) => { const h = Math.floor(i/2), m = i%2===0?"00":"30"; return String(h).padStart(2,"0")+":"+m; };
+const slotRange = (i) => { const j=i+1, h2=Math.floor(j/2), m2=j%2===0?"00":"30"; return slotLabel(i)+"–"+String(h2).padStart(2,"0")+":"+m2; };
+const ACTIVITIES = [
+  {id:"sleep",label:"睡眠",icon:"🌙",color:"#6366f1",definition:"在床上或其他休息环境中睡觉、午睡，或夜间醒来后继续睡眠。",examples:["夜间睡觉","午休补眠","凌晨醒来后继续入睡"]},
+  {id:"care",label:"个人护理",icon:"🪥",color:"#60a5fa",definition:"与个人清洁、梳洗、更衣、如厕等相关的日常自我照料。",examples:["洗漱和洗澡","换衣服","化妆整理仪容"]},
+  {id:"eat",label:"用餐 / 饮食",icon:"🍜",color:"#f59e0b",definition:"以进食、喝饮料、准备简单餐食为主要内容的时间。",examples:["吃早餐或晚餐","喝咖啡休息","简单加热食物并进食"]},
+  {id:"work",label:"有偿工作（主业）",icon:"💼",color:"#0d9488",definition:"主职业相关的受薪工作、会议、处理任务、商务沟通等。",examples:["办公室工作","开会汇报","客户沟通","在岗处理业务"]},
+  {id:"work2",label:"有偿工作（副业）",icon:"💻",color:"#14b8a6",definition:"除主业外的兼职、自由职业、线上接单或其他有收入活动。",examples:["做兼职","运营网店","接私活","跑网约车"]},
+  {id:"study",label:"学习 / 上课",icon:"📚",color:"#8b5cf6",definition:"正式课程学习、培训、写作业、复习备考等与学习直接相关的活动。",examples:["上课听讲","参加培训","写作业","复习考试"]},
+  {id:"house",label:"家务劳动",icon:"🧹",color:"#22c55e",definition:"与维持家庭运转有关的无偿劳动。",examples:["打扫卫生","做饭","洗衣服","收拾房间"]},
+  {id:"careFam",label:"照顾家人",icon:"👶",color:"#ec4899",definition:"直接照料儿童、老人、病人或其他家庭成员。",examples:["照顾孩子","陪老人就医","辅导孩子功课"]},
+  {id:"shop",label:"购物 / 消费",icon:"🛒",color:"#f97316",definition:"购买商品、生活用品、点餐取餐或办理消费事项。",examples:["超市采购","逛商场买东西","买药","取外卖"]},
+  {id:"commute",label:"通勤出行",icon:"🚇",color:"#eab308",definition:"住宅与主业工作地或学校之间的往返出行。",examples:["从家去公司","下班回家","去学校上课的路上"]},
+  {id:"travel",label:"非通勤出行",icon:"🚶",color:"#a3e635",definition:"不以通勤为目的的出行移动。",examples:["外出办事","去聚会","去医院","接送家人"]},
+  {id:"social",label:"面对面社交",icon:"👥",color:"#f472b6",definition:"与他人线下见面交流、聚会或陪伴。",examples:["和朋友聊天","家庭聚餐","线下会面","拜访亲友"]},
+  {id:"online",label:"线上社交 / 通讯",icon:"📱",color:"#fb923c",definition:"通过手机或电脑进行沟通联络，但不以娱乐浏览为主。",examples:["微信聊天","打电话","视频通话","回工作消息"]},
+  {id:"phone",label:"浏览手机 / 平板",icon:"📲",color:"#fb7185",definition:"使用手机、平板或电脑进行轻度浏览、刷信息流或碎片化娱乐。",examples:["刷社交媒体","看短视频","浏览新闻","随手看手机"]},
+  {id:"tv",label:"看电视 / 视频",icon:"📺",color:"#e879f9",definition:"观看长视频、电视剧、电影、综艺或直播内容。",examples:["看电视剧","看电影","追综艺","看直播"]},
+  {id:"sport",label:"体育锻炼",icon:"🏃",color:"#34d399",definition:"以运动、健身、训练为主要目的的身体活动。",examples:["跑步","健身房训练","打球","做瑜伽"]},
+  {id:"read",label:"阅读（非课堂）",icon:"📖",color:"#a78bfa",definition:"与课程无直接关系的阅读活动。",examples:["读书","看报纸","看杂志","阅读长文章"]},
+  {id:"hobby",label:"兴趣爱好 / 休闲",icon:"🎨",color:"#2dd4bf",definition:"个人兴趣、手工、放松和非屏幕型休闲活动。",examples:["画画","玩乐器","做手工","散步放松"]},
+  {id:"volunteer",label:"志愿服务",icon:"🤝",color:"#fbbf24",definition:"无偿参与公益、社区或志愿性质的服务活动。",examples:["社区服务","参加公益活动","志愿者值班"]},
+  {id:"other",label:"其他",icon:"📌",color:"#94a3b8",definition:"以上类别都不适合时再选择，并尽量结合场所和位置判断。",examples:["等待办理事务","短暂发呆休息","难以归类的特殊活动"]},
+];
+const VENUE_GROUPS = [
+  {title:"住宅类",options:[
+    {id:"home_owned",label:"自有住房",icon:"🏠"},
+    {id:"home_subsidized",label:"补贴性住房",icon:"🏘️"},
+    {id:"home_rental_private",label:"租住－私人房源",icon:"🔑"},
+    {id:"home_rental_public",label:"租住－公共/保障性住房",icon:"🧱"},
+    {id:"dormitory",label:"单位/学校宿舍",icon:"🛏️"},
+    {id:"relative_home",label:"父母/亲友家中",icon:"👪"}
+  ]},
+  {title:"工作与学习类",options:[
+    {id:"office",label:"写字楼/商务办公区",icon:"🏢"},
+    {id:"retail_food_work",label:"商场/临街店铺/餐饮场所",icon:"🏬"},
+    {id:"industrial",label:"工厂/仓库/工业园区",icon:"🏭"},
+    {id:"school",label:"学校/培训机构",icon:"🎓"},
+    {id:"medical",label:"医院/诊所/护理机构",icon:"🏥"},
+    {id:"public_service",label:"政府机关/公共服务机构",icon:"🏛️"},
+    {id:"remote_home",label:"居家办公",icon:"💻"},
+    {id:"outdoor_work",label:"户外/工地/驾驶交通工具",icon:"🦺"},
+    {id:"mobile_work",label:"不固定/经常移动",icon:"🧭"}
+  ]},
+  {title:"出行类",options:[
+    {id:"metro_rail",label:"地铁/轻轨上",icon:"🚇"},
+    {id:"bus",label:"城市公交车上",icon:"🚌"},
+    {id:"taxi_ridehail",label:"出租车/网约车上",icon:"🚕"},
+    {id:"private_car",label:"私家车上",icon:"🚗"},
+    {id:"cross_border_bus",label:"跨境巴士/口岸接驳车上",icon:"🛂"},
+    {id:"intercity_rail",label:"铁路/城际高铁上",icon:"🚄"},
+    {id:"ferry",label:"渡轮/船上",icon:"⛴️"},
+    {id:"walking",label:"步行途中",icon:"🚶"}
+  ]},
+  {title:"日常活动场所",options:[
+    {id:"mall_shop",label:"商场/购物中心",icon:"🛍️"},
+    {id:"restaurant",label:"餐厅/咖啡店",icon:"☕"},
+    {id:"park",label:"公园/户外空间",icon:"🌳"},
+    {id:"gym",label:"健身房/运动场所",icon:"🏃"},
+    {id:"other",label:"其他",icon:"📍"}
+  ]}
+];
+const VENUES = VENUE_GROUPS.flatMap(group => group.options);
+const VENUE_MAP = Object.fromEntries(VENUES.map(v => [v.id, v]));
+const MOVING_VENUE_IDS = ["metro_rail","bus","taxi_ridehail","private_car","cross_border_bus","intercity_rail","ferry","walking"];
+const FIXED_VENUE_GROUPS = VENUE_GROUPS.filter(group => group.title !== "出行类");
+const MOVING_VENUE_GROUPS = [{ title:"移动中的场所类型", options: VENUE_GROUPS.find(group => group.title === "出行类")?.options || [] }];
+const METRO_DATA = {"香港":{"东铁线":["落马洲","罗湖","上水","粉岭","太和","大埔墟","大学","马场","火炭","沙田","大围","九龙塘","旺角东","红磡","会展","金钟"],"观塘线":["调景岭","油塘","蓝田","观塘","牛头角","九龙湾","彩虹","钻石山","黄大仙","乐富","九龙塘","石硤尾","太子","旺角","油麻地","何文田","黄埔"],"荃湾线":["荃湾","大窝口","葵兴","葵芳","荔景","美孚","荔枝角","长沙湾","深水埗","太子","旺角","油麻地","佐敦","尖沙咀","金钟","中环"],"港岛线":["柴湾","杏花邨","筲箕湾","西湾河","太古","鲗鱼涌","北角","炮台山","天后","铜锣湾","湾仔","金钟","中环","上环","西营盘","香港大学","坚尼地城"],"东涌线":["东涌","欣澳","青衣","荔景","南昌","奥运","九龙","香港"],"机场快线":["博览馆","机场","青衣","九龙","香港"],"将军澳线":["宝琳","康城","坑口","将军澳","调景岭","油塘","鲗鱼涌","北角"],"屯马线":["屯门","兆康","天水围","朗屏","元朗","锦上路","荃湾西","美孚","南昌","柯士甸","尖东","红磡","何文田","土瓜湾","宋皇台","启德","钻石山","显径","大围","车公庙","沙田围","第一城","石门","大水坑","恒安","马鞍山","乌溪沙"],"迪士尼线":["欣澳","迪士尼"],"南港岛线":["海怡半岛","利东","黄竹坑","海洋公园","金钟"]},"深圳":{"1号线":["罗湖","国贸","老街","大剧院","科学馆","华强路","岗厦","会展中心","购物公园","香蜜湖","车公庙","竹子林","侨城东","华侨城","世界之窗","白石洲","高新园","深大","桃园","大新","鲤鱼门","前海湾","新安","宝安中心","宝体","坪洲","西乡","固戍","后瑞","机场东"],"2号线":["赤湾","蛇口港","海上世界","水湾","东角头","湾厦","海月","登良","后海","科苑","红树湾","世界之窗","侨城北","深康","安托山","侨香","香蜜","香梅北","景田","莲花西","福田","市民中心","岗厦北","华强北","燕南","大剧院","湖贝","黄贝岭","新秀","莲塘口岸","仙湖路","莲塘"],"3号线":["福保","益田","石厦","购物公园","福田","少年宫","莲花村","华新","通新岭","红岭","老街","晒布","翠竹","田贝","水贝","草埔","布吉","木棉湾","大芬","丹竹头","六约","塘坑","横岗","永湖","荷坳","大运","爱联","吉祥","龙城广场","南联","双龙","梨园","新生","坪西","低碳城","白石塘","富坪","坪地六联"],"4号线":["福田口岸","福民","会展中心","市民中心","少年宫","莲花北","上梅林","民乐","白石龙","深圳北站","红山","上塘","龙胜","龙华","清湖","清湖北","竹村","茜坑","长湖","观澜","松元厦","观澜湖","牛湖"],"5号线":["赤湾","荔湾","铁路公园","妈湾","前湾公园","前湾","桂湾","前海湾","临海","宝华","宝安中心","翻身","灵芝","洪浪北","兴东","留仙洞","西丽","大学城","塘朗","长岭陂","深圳北站","民治","五和","坂田","杨美","上水径","下水径","长龙","布吉","百鸽笼","布心","太安","怡景","黄贝岭","湖贝","东门","大剧院"],"6号线":["科学馆","通新岭","体育中心","八卦岭","银湖","翰岭","梅林关","深圳北站","红山","上芬","元芬","阳台山东","官田","上屋","长圳","凤凰城","光明大街","光明","科学公园","楼村","红花山","公明广场","合水口","薯田埔","松岗公园","溪头","松岗"],"6号线支线":["光明城","虹桥公园","碧眼","光明","圳美","中大","深理工"],"7号线":["深大丽湖","北大","西丽湖","西丽","茶光","珠光","龙井","桃源村","深云","安托山","农林","车公庙","上沙","沙尾","石厦","皇岗村","福民","皇岗口岸","赤尾","华强南","华强北","华新","黄木岗","八卦岭","红岭北","笋岗","洪湖","田贝","太安"],"8号线":["莲塘","梧桐山南","沙头角","海山","盐田港西","深外高中","盐田路","鸿安围","盐田墟","大梅沙","小梅沙","溪涌"],"9号线":["前湾","梦海","怡海","荔林","南油西","南油","南山书城","深大南","粤海门","高新南","红树湾南","深湾","深圳湾公园","下沙","车公庙","香梅","景田","梅景","下梅林","梅村","上梅林","孖岭","银湖","泥岗","红岭北","园岭","红岭","红岭南","鹿丹村","人民南","向西村","文锦"],"10号线":["双拥街","平湖","禾花","华南城","木古","上李朗","凉帽山","甘坑","雪象","岗头","华为","贝尔路","坂田北","五和","光雅园","南坑","雅宝","孖岭","冬瓜岭","莲花村","岗厦北","岗厦","福民","福田口岸"],"11号线":["碧头","松岗","后亭","沙井","马安山","塘尾","桥头","福永","机场北","机场","碧海湾","宝安","前海湾","南山","后海","红树湾南","车公庙","福田","岗厦北","福星","华强南","红岭南"],"12号线":["左炮台东","太子湾","海上世界","花果山","四海","南油","南光","南山","桃园","南头古城","中山公园","同乐南","新安公园","灵芝","上川","流塘","宝安客运站","宝田一路","平峦山","西乡桃源","钟屋南","黄田","兴围","机场东","福围","怀德","福永","桥头西","福海西","国展","国展北","海上田园南","海上田园东","蚝乡","沙蚝","沙井古墟","步涌","朗下","松岗"],"13号线":["深圳湾口岸","人才公园","后海","科苑","粤海门","深大","高新中","高新北","石鼓","留仙洞","百旺","应人石","罗租","石岩","上屋"],"14号线":["岗厦北","黄木岗","罗湖北","布吉","石芽岭","六约北","四联","坳背","大运","嶂背","南约","宝龙","锦龙","坪山围","坪山广场","坪山中心","坑梓","沙田"],"16号线":["大运","大运中心","龙城公园","黄阁坑","愉园","回龙埔","尚景","盛平","龙园","双龙","新塘围","龙东","宝龙同乐","坪山","新和","六和","坪山围","坪环","东纵纪念馆","沙壆","燕子湖","石井","技术大学","田心","金源","吉溪","大安","园山","大康","福坑","安良","园山西坑"],"20号线":["会展城","国展北","国展","国展南","机场北"]}};
+const MOODS = [{val:1,emoji:"😞"},{val:2,emoji:"😕"},{val:3,emoji:"😐"},{val:4,emoji:"😊"},{val:5,emoji:"😄"}];
+const SMART_VENUE = {sleep:"home_owned",care:"home_owned",work:"office",study:"school",house:"home_owned",careFam:"home_owned",shop:"mall_shop",online:"home_owned",phone:"home_owned",tv:"home_owned",sport:"gym",read:"home_owned",hobby:"home_owned"};
+const SECTIONS = [{slot:0,label:"深夜 · 0:00–1:00"},{slot:2,label:"凌晨 · 1:00–6:00（如整段睡眠可跳过）"},{slot:12,label:"早晨 · 6:00–9:00"},{slot:18,label:"上午 · 9:00–12:00"},{slot:24,label:"下午 · 12:00–15:00"},{slot:30,label:"下午 · 15:00–18:00"},{slot:36,label:"傍晚 · 18:00–21:00"},{slot:42,label:"夜间 · 21:00–24:00"}];
+
+const getVenue = (id) => VENUE_MAP[id] || null;
+const isMovingVenue = (id) => MOVING_VENUE_IDS.includes(id);
+const parseLocationPath = (value) => {
+  if (!value || value === "移动中") return { city:"", line:"", station:"" };
+  const parts = value.split(" / ");
+  if (parts.length === 3) return { city: parts[0], line: parts[1], station: parts[2] };
+  return { city:"", line:"", station:value };
+};
+const formatLocationShort = (slot) => {
+  if (!slot) return "";
+  if (slot.location === "移动中") return "移动中";
+  return slot.locationStation || parseLocationPath(slot.location).station || slot.location || "";
+};
+const formatLocationFull = (slot) => {
+  if (!slot) return "";
+  if (slot.location === "移动中") return "移动中";
+  if (slot.locationCity && slot.locationLine && slot.locationStation) return `${slot.locationCity} / ${slot.locationLine} / ${slot.locationStation}`;
+  return slot.location || "";
+};
+const makeDefault = () => { const a=Array(48).fill(null); for(let i=0;i<12;i++) a[i]={primary:"sleep",secondary:"none",venue:"home_owned",location:"",locationCity:"",locationLine:"",locationStation:"",mood:3}; return a; };
+const genId = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+function App() {
+  const [page,setPage]=useState("intro");
+  const [slots,setSlots]=useState(makeDefault);
+  const [selStart,setSelStart]=useState(null);
+  const [selEnd,setSelEnd]=useState(null);
+  const [showModal,setShowModal]=useState(false);
+  const [toast,setToast]=useState(null);
+  const [toastErr,setToastErr]=useState(false);
+  const [submitting,setSubmitting]=useState(false);
+  const [submitted,setSubmitted]=useState(false);
+  const [rid]=useState(genId);
+  const [edP,setEdP]=useState("");
+  const [edS,setEdS]=useState("none");
+  const [edV,setEdV]=useState("");
+  const [edLocCity,setEdLocCity]=useState("");
+  const [edLocLine,setEdLocLine]=useState("");
+  const [edLocStation,setEdLocStation]=useState("");
+  const [edM,setEdM]=useState(3);
+  const [edMov,setEdMov]=useState(false);
+  const [helpAct,setHelpAct]=useState(null);
+
+  const filled=useMemo(()=>slots.filter(Boolean).length,[slots]);
+  const pct=Math.round((filled/48)*100);
+  const getA=(id)=>ACTIVITIES.find(a=>a.id===id);
+  const metroCities=Object.keys(METRO_DATA);
+  const lineOptions=edLocCity?Object.keys(METRO_DATA[edLocCity]||{}):[];
+  const stationOptions=edLocCity&&edLocLine?(METRO_DATA[edLocCity][edLocLine]||[]):[];
+  const validLocation=edMov||(!!edLocCity&&!!edLocLine&&!!edLocStation);
+  const flash=(m,e)=>{setToast(m);setToastErr(!!e);setTimeout(()=>setToast(null),3000);};
+  const openHelp=(activity,e)=>{ if(e) e.stopPropagation(); setHelpAct(activity); };
+
+  const click=(i)=>{
+    if(selStart===null){setSelStart(i);setSelEnd(i);}
+    else if(selEnd===i&&selStart===i){openEd(i,i);}
+    else{setSelStart(Math.min(selStart,i));setSelEnd(Math.max(selStart,i));}
+  };
+  const openEd=(a,b)=>{
+    const lo=Math.min(a,b),x=slots[lo];
+    if(x){
+      const parsed=parseLocationPath(x.location);
+      setEdP(x.primary);
+      setEdS(x.secondary);
+      setEdV(getVenue(x.venue)?.id || VENUES.find(v=>v.label===x.venue)?.id || x.venue || "");
+      setEdLocCity(x.locationCity || parsed.city);
+      setEdLocLine(x.locationLine || parsed.line);
+      setEdLocStation(x.locationStation || parsed.station);
+      setEdMov(x.location==="移动中");
+      setEdM(x.mood);
+    }
+    else{
+      setEdP("");
+      setEdS("none");
+      setEdV("");
+      setEdLocCity("");
+      setEdLocLine("");
+      setEdLocStation("");
+      setEdMov(false);
+      setEdM(3);
+    }
+    setSelStart(lo);setSelEnd(Math.max(a,b));setShowModal(true);
+  };
+  const save=()=>{
+    if(!edP)return;const lo=Math.min(selStart,selEnd),hi=Math.max(selStart,selEnd),ns=[...slots];
+    const locationValue=edMov?"移动中":`${edLocCity} / ${edLocLine} / ${edLocStation}`;
+    for(let i=lo;i<=hi;i++) ns[i]={primary:edP,secondary:edS,venue:edV,location:locationValue,locationCity:edMov?"":edLocCity,locationLine:edMov?"":edLocLine,locationStation:edMov?"":edLocStation,mood:edM};
+    setSlots(ns);setShowModal(false);setSelStart(null);setSelEnd(null);flash("✓ 已填写 "+(hi-lo+1)+" 个时段");
+  };
+  const clear=()=>{
+    const lo=Math.min(selStart,selEnd),hi=Math.max(selStart,selEnd),ns=[...slots];
+    for(let i=lo;i<=hi;i++) ns[i]=null;
+    setSlots(ns);setShowModal(false);setSelStart(null);setSelEnd(null);flash("已清除");
+  };
+  const pickP=(id)=>{
+    setEdP(id);
+    const sv=SMART_VENUE[id];
+    if(id==="commute"||id==="travel"){
+      setEdMov(true);
+      setEdLocCity("");
+      setEdLocLine("");
+      setEdLocStation("");
+      if(!isMovingVenue(edV)) setEdV("");
+      return;
+    }
+    if(sv&&(!edV||isMovingVenue(edV))) setEdV(sv);
+  };
+  const cancel=()=>{setSelStart(null);setSelEnd(null);};
+  const inR=(i)=>{if(selStart===null)return false;const lo=Math.min(selStart,selEnd??selStart),hi=Math.max(selStart,selEnd??selStart);return i>=lo&&i<=hi;};
+
+  const merged=useMemo(()=>{const b=[];let i=0;while(i<48){if(!slots[i]){i++;continue;}const s=i;while(i+1<48&&slots[i+1]&&slots[i+1].primary===slots[s].primary&&slots[i+1].secondary===slots[s].secondary&&slots[i+1].venue===slots[s].venue&&slots[i+1].location===slots[s].location&&slots[i+1].mood===slots[s].mood)i++;b.push({from:s,to:i,data:slots[s]});i++;}return b;},[slots]);
+
+  const submit=async()=>{
+    if(GOOGLE_SCRIPT_URL==="YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"){flash("请先配置 Google Apps Script URL",true);return;}
+    if(filled<48&&!confirm("还有 "+(48-filled)+" 个时段未填写，确定提交吗？"))return;
+    setSubmitting(true);
+    try{
+      const diary=slots.map((s,i)=>({time:slotRange(i),primary:s?(getA(s.primary)?.label||""):"",secondary:s?(s.secondary==="none"?"无":(getA(s.secondary)?.label||"")):"",venue:s?(getVenue(s.venue)?.label||s.venue||""):"",location:s?s.location:"",mood:s?s.mood:""}));
+      await fetch(GOOGLE_SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({respondentId:rid,diary})});
+      setSubmitted(true);
+    }catch(e){flash("提交失败，请重试："+e.message,true);}
+    finally{setSubmitting(false);}
+  };
+
+  if(submitted) return(<div className="td-app"><div className="success-page"><div className="icon">提交完成</div><h2>提交成功</h2><p>非常感谢您的参与。<br/>您的数据已成功发送至研究团队。<br/><br/>受访者编号：<br/><strong style={{fontFamily:"var(--font)",color:"var(--accent)"}}>{rid}</strong><br/><br/>如有疑问请联系：sumlab2026@gmail.com</p></div></div>);
+
+  if(page==="intro") return(
+    <div className="td-app"><div className="intro-page">
+      <div className="logo">HKSZ SURVEY</div><h2>时间利用日记</h2>
+      <p>香港–深圳（HKSZ）时间利用调查<br/>请回忆最近一个工作日的全天活动</p>
+      <div className="features">
+        <div className="feat"><div className="num">1</div><div className="desc"><strong>选择时间范围</strong>：点击起始时段，再点击结束时段，批量填写</div></div>
+        <div className="feat"><div className="num">2</div><div className="desc"><strong>填写活动信息</strong>：选择活动类型、场所、位置和心情</div></div>
+        <div className="feat"><div className="num">3</div><div className="desc"><strong>检查并提交</strong>：在"总览"页确认后提交，数据直接发送至研究团队</div></div>
+      </div>
+      <p style={{fontSize:"0.9rem",color:"var(--text3)",marginBottom:18}}>已预填 0:00–6:00 为睡眠，可根据实际情况修改。</p>
+      <button className="start-btn" onClick={()=>setPage("diary")}>开始填写 →</button>
+    </div></div>
+  );
+
+  return(
+    <div className="td-app">
+      {toast&&<div className={"toast"+(toastErr?" error":"")}>{toast}</div>}
+      <div className="td-header">
+        <h1>时间利用日记</h1><div className="subtitle">以 30 分钟为单位，记录您最近一个工作日的活动安排</div>
+        <div className="progress-wrap"><div className="progress-bar"><div className="progress-fill" style={{width:pct+"%"}}/></div>
+        <div className="progress-text"><span>已填写 {filled}/48</span><span>{pct}%</span></div></div>
+      </div>
+      <div className="tab-bar">
+        <button className={"tab-btn"+(page==="diary"?" active":"")} onClick={()=>setPage("diary")}>时间轴</button>
+        <button className={"tab-btn"+(page==="review"?" active":"")} onClick={()=>setPage("review")}>总览 · 提交</button>
+      </div>
+
+      {page==="diary"&&<div className="timeline">{Array.from({length:48},(_,i)=>{
+        const sec=SECTIONS.find(s=>s.slot===i),s=slots[i],act=s?getA(s.primary):null,venue=s?getVenue(s.venue):null;
+        return(<div key={i}>{sec&&<div className="time-divider">{sec.label}</div>}
+          <div className={"slot-row"+(inR(i)?" selected":"")} onClick={()=>click(i)}>
+            <div className="slot-time">{slotRange(i)}</div>
+            <div className="slot-content">{s?(<div className="slot-filled">
+              <div className="slot-color" style={{background:act?.color||"#94a3b8"}}/>
+              <div className="slot-info"><div className="slot-activity">{act?.icon} {act?.label}</div><div className="slot-venue">{venue?.label||s.venue}{formatLocationShort(s)?" · "+formatLocationShort(s):""}</div></div>
+              <div className="slot-mood">{MOODS.find(m=>m.val===s.mood)?.emoji}</div>
+            </div>):<div className="slot-empty">点击填写</div>}</div>
+          </div></div>);
+      })}</div>}
+
+      {page==="review"&&<div className="review">
+        {merged.length===0?<div className="empty-review"><div className="icon">尚未填写</div><p>目前还没有记录任何时段。</p></div>:(
+        <>{merged.map((b,i)=>{const act=getA(b.data.primary),sec=b.data.secondary!=="none"?getA(b.data.secondary):null,venue=getVenue(b.data.venue);
+          return(<div key={i} className="review-block"><div className="review-time">{slotLabel(b.from)}–{slotLabel(b.to+1)}</div>
+            <div className="review-detail"><div className="act-name">{act?.icon} {act?.label}</div>
+            <div className="meta">{sec&&<>副：{sec.icon} {sec.label} · </>}{venue?.label||b.data.venue}{formatLocationFull(b.data)?" · "+formatLocationFull(b.data):""} · {MOODS.find(m=>m.val===b.data.mood)?.emoji}</div></div></div>);
+        })}
+        {filled<48&&<div className="warning-box">⚠ 尚有 {48-filled} 个时段未填写。建议填写完整后再提交。</div>}
+        <div className="submit-section">
+          <button className="start-btn" disabled={submitting||filled===0} onClick={submit} style={{marginTop:8}}>
+            {submitting?<><span className="spinner"></span>提交中…</>:"确认提交"}
+          </button>
+          <p style={{fontSize:11,color:"var(--text3)",marginTop:12,textAlign:"center",lineHeight:1.5}}>数据将直接发送至研究团队 · 编号：{rid}</p>
+        </div></>)}
+      </div>}
+
+      {selStart!==null&&!showModal&&<div className="batch-bar">
+        <div className="info">已选 {Math.abs((selEnd??selStart)-selStart)+1} 个时段
+          <small>{slotLabel(Math.min(selStart,selEnd??selStart))}–{slotLabel(Math.max(selStart,selEnd??selStart)+1)}</small></div>
+        <div><button className="btn-cancel" onClick={cancel}>取消</button><button className="btn-fill" onClick={()=>openEd(selStart,selEnd??selStart)}>填写 →</button></div>
+      </div>}
+
+      {showModal&&<div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget){setShowModal(false);cancel();}}}>
+        <div className="modal-sheet"><div className="handle"/>
+          <h2>填写活动信息</h2>
+          <div className="time-range">🕐 {slotLabel(Math.min(selStart,selEnd))} – {slotLabel(Math.max(selStart,selEnd)+1)}（{Math.abs(selEnd-selStart)+1} 个时段）</div>
+          <label className="field-label">主要活动 *</label>
+          <div className="field-hint">单击直接选择；如果想看定义和示例，可点每个活动右侧的 `i`。</div>
+          <div className="act-grid">{ACTIVITIES.map(a=><div key={a.id} className={"act-chip"+(edP===a.id?" active":"")} onClick={()=>pickP(a.id)}><span className="emoji">{a.icon}</span><span className="label">{a.label}</span><button type="button" className="help-btn" aria-label={"查看"+a.label+"说明"} onClick={e=>openHelp(a,e)}>i</button></div>)}</div>
+          <label className="field-label">次要活动</label>
+          <div className="act-grid">
+            <div className={"act-chip"+(edS==="none"?" active":"")} onClick={()=>setEdS("none")}><span className="emoji">✖️</span><span>无</span></div>
+            {ACTIVITIES.filter(a=>a.id!==edP&&a.id!=="sleep").map(a=><div key={a.id} className={"act-chip"+(edS===a.id?" active":"")} onClick={()=>setEdS(a.id)}><span className="emoji">{a.icon}</span><span className="label">{a.label}</span><button type="button" className="help-btn" aria-label={"查看"+a.label+"说明"} onClick={e=>openHelp(a,e)}>i</button></div>)}
+          </div>
+          <label className="field-label">活动地点位置 *</label>
+          <div className="loc-toggle">
+            <button className={!edMov?"active":""} onClick={()=>{
+              setEdMov(false);
+              if(isMovingVenue(edV)) setEdV("");
+            }}>特定地点</button>
+            <button className={edMov?"active":""} onClick={()=>{
+              setEdMov(true);
+              setEdLocCity("");
+              setEdLocLine("");
+              setEdLocStation("");
+              if(!isMovingVenue(edV)) setEdV("");
+            }}>移动中</button>
+          </div>
+          {!edMov&&<>
+            <div className="field-hint">先选择香港或深圳，再选择对应地铁线路和最近地铁站。</div>
+            <div className="city-row">{metroCities.map(city=><button key={city} className={"city-chip"+(edLocCity===city?" active":"")} onClick={()=>{setEdLocCity(city);setEdLocLine("");setEdLocStation("");}}>{city}</button>)}</div>
+            <div className="select-panel">
+              <label className="select-label">地铁线路</label>
+              <select className="select-input" value={edLocLine} disabled={!edLocCity} onChange={e=>{setEdLocLine(e.target.value);setEdLocStation("");}}>
+                <option value="">{edLocCity?"请选择地铁线路":"请先选择城市"}</option>
+                {lineOptions.map(line=><option key={line} value={line}>{line}</option>)}
+              </select>
+            </div>
+            <div className="select-panel">
+              <label className="select-label">最近地铁站</label>
+              <select className="select-input" value={edLocStation} disabled={!edLocLine} onChange={e=>setEdLocStation(e.target.value)}>
+                <option value="">{edLocLine?"请选择最近地铁站":"请先选择地铁线路"}</option>
+                {stationOptions.map(station=><option key={station} value={station}>{station}</option>)}
+              </select>
+            </div>
+          </>}
+          <label className="field-label">场所类型 *</label>
+          {(edMov?MOVING_VENUE_GROUPS:FIXED_VENUE_GROUPS).map(group=><div key={group.title} className="venue-group"><div className="venue-group-title">{group.title}</div><div className="venue-chips">{group.options.map(v=><div key={v.id} className={"venue-chip"+(edV===v.id?" active":"")} onClick={()=>setEdV(v.id)}><span>{v.label}</span></div>)}</div></div>)}
+          <label className="field-label">心情 *</label>
+          <div className="mood-row">{MOODS.map(m=><div key={m.val} className={"mood-btn"+(edM===m.val?" active":"")} onClick={()=>setEdM(m.val)}>{m.emoji}<small>{m.val}</small></div>)}</div>
+          <div className="modal-actions">
+            {slots[Math.min(selStart,selEnd)]&&<button className="btn-danger" onClick={clear}>清除</button>}
+            <button className="btn-secondary" onClick={()=>{setShowModal(false);cancel();}}>取消</button>
+            <button className="btn-primary" disabled={!edP||!edV||!validLocation} onClick={save}>确认保存</button>
+          </div>
+        </div>
+      </div>}
+      {helpAct&&<div className="help-overlay" onClick={()=>setHelpAct(null)}>
+        <div className="help-card" onClick={e=>e.stopPropagation()}>
+          <div className="help-card-head">
+            <div>
+              <h3>{helpAct.icon} {helpAct.label}</h3>
+            </div>
+            <button type="button" className="help-close" aria-label="关闭说明" onClick={()=>setHelpAct(null)}>×</button>
+          </div>
+          <p>{helpAct.definition}</p>
+          <div className="help-section">
+            <strong>常见示例</strong>
+            <ul className="help-list">
+              {helpAct.examples.map(example=><li key={example}>{example}</li>)}
+            </ul>
+          </div>
+        </div>
+      </div>}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
